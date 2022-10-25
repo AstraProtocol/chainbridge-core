@@ -2,11 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
-
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
 	"github.com/ethereum/go-ethereum/common"
@@ -65,7 +64,7 @@ func ProcessSimulateFlags(cmd *cobra.Command, args []string) {
 
 func SimulateCmd(cmd *cobra.Command) error {
 	// fetch global flag values
-	url, _, _, senderKeyPair, _, err := flags.GlobalFlagValues(cmd)
+	url, _, _, senderKeyPair, kmsSigner, _, err := flags.GlobalFlagValues(cmd)
 	if err != nil {
 		return fmt.Errorf("could not get global flags: %v", err)
 	}
@@ -80,7 +79,7 @@ Block number: %v
 From address: %s`,
 		TxHash, blockNumberBigInt, FromAddress)
 
-	ethClient, err := evmclient.NewEVMClient(url, senderKeyPair.PrivateKey())
+	ethClient, err := initialize.InitializeClient(url, senderKeyPair, kmsSigner)
 	if err != nil {
 		log.Error().Err(fmt.Errorf("eth client intialization error: %v", err))
 		return err

@@ -1,6 +1,7 @@
 package centrifuge
 
 import (
+	kms "github.com/LampardNguyen234/evm-kms"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
@@ -24,5 +25,6 @@ var (
 	url           string
 	gasPrice      *big.Int
 	senderKeyPair *secp256k1.Keypair
+	kmsSigner     kms.KMSSigner
 	prepare       bool
 )

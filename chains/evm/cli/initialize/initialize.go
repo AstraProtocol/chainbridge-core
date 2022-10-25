@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	kms "github.com/LampardNguyen234/evm-kms"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
@@ -16,14 +17,24 @@ import (
 
 func InitializeClient(
 	url string,
-	senderKeyPair *secp256k1.Keypair,
+	senderKeyPair *secp256k1.Keypair, kmsSigner kms.KMSSigner,
 ) (*evmclient.EVMClient, error) {
-	ethClient, err := evmclient.NewEVMClient(
-		url, senderKeyPair.PrivateKey())
+	var ethClient *evmclient.EVMClient
+	var err error
+	if senderKeyPair != nil {
+		ethClient, err = evmclient.NewEVMClient(
+			url, senderKeyPair.PrivateKey())
+
+	} else if kmsSigner != nil {
+		ethClient, err = evmclient.NewEVMClientWithKMSSigner(url, kmsSigner)
+	} else {
+		err = fmt.Errorf("either `senderKeyPair` or `kmsSigner` must be set")
+	}
 	if err != nil {
 		log.Error().Err(fmt.Errorf("eth client initialization error: %v", err))
 		return nil, err
 	}
+
 	return ethClient, nil
 }
 

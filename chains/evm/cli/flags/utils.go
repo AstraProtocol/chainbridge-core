@@ -1,9 +1,16 @@
 package flags
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
+	kms "github.com/LampardNguyen234/evm-kms"
+	"github.com/LampardNguyen234/evm-kms/gcpkms"
+	types2 "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/spf13/viper"
 	"math/big"
+	"strings"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
 
@@ -17,41 +24,97 @@ import (
 
 const DefaultGasLimit = 2000000
 
-func GlobalFlagValues(cmd *cobra.Command) (string, uint64, *big.Int, *secp256k1.Keypair, bool, error) {
-	url, err := cmd.Flags().GetString("url")
+var (
+	urlFlag           = "url"
+	gasLimitFlag      = "gas-limit"
+	gasPriceFlag      = "gas-price"
+	prepareFlag       = "prepare"
+	privateKeyFlag    = "private-key"
+	kmsConfigFileFlag = "kms-config-file"
+)
+
+func BindGlobalFlags(rootCMD *cobra.Command) {
+	rootCMD.PersistentFlags().String(urlFlag, "", "The RPC endpoint")
+	_ = viper.BindPFlag(urlFlag, rootCMD.PersistentFlags().Lookup(urlFlag))
+
+	rootCMD.PersistentFlags().Uint64(gasLimitFlag, DefaultGasLimit, "The gas limit")
+	_ = viper.BindPFlag(gasLimitFlag, rootCMD.PersistentFlags().Lookup(gasLimitFlag))
+
+	rootCMD.PersistentFlags().Uint64(gasPriceFlag, 0, "The gas price")
+	_ = viper.BindPFlag(gasPriceFlag, rootCMD.PersistentFlags().Lookup(gasPriceFlag))
+
+	rootCMD.PersistentFlags().Bool(prepareFlag, false, "The prepare flag (true for generating payload only)")
+	_ = viper.BindPFlag(prepareFlag, rootCMD.PersistentFlags().Lookup(prepareFlag))
+
+	rootCMD.PersistentFlags().String(privateKeyFlag, "", "The private key")
+	_ = viper.BindPFlag(privateKeyFlag, rootCMD.PersistentFlags().Lookup(privateKeyFlag))
+
+	rootCMD.PersistentFlags().String(kmsConfigFileFlag, "", "The path to the KMS config file")
+	_ = viper.BindPFlag(kmsConfigFileFlag, rootCMD.PersistentFlags().Lookup(kmsConfigFileFlag))
+}
+
+func GlobalFlagValues(cmd *cobra.Command) (string, uint64, *big.Int, *secp256k1.Keypair, kms.KMSSigner, bool, error) {
+	url, err := cmd.Flags().GetString(urlFlag)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("url error: %v", err))
-		return "", DefaultGasLimit, nil, nil, false, err
+		log.Error().Err(formatFlagError(urlFlag, err))
+		return "", DefaultGasLimit, nil, nil, nil, false, err
+	}
+	ethClient, err := ethclient.Dial(url)
+	if err != nil {
+		log.Error().Err(fmt.Errorf("cannot dial `%v`", url))
 	}
 
-	gasLimitInt, err := cmd.Flags().GetUint64("gas-limit")
+	gasLimitInt, err := cmd.Flags().GetUint64(gasLimitFlag)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("gas limit error: %v", err))
-		return "", DefaultGasLimit, nil, nil, false, err
+		log.Error().Err(formatFlagError(gasLimitFlag, err))
+		return "", DefaultGasLimit, nil, nil, nil, false, err
 	}
 
-	gasPriceInt, err := cmd.Flags().GetUint64("gas-price")
+	gasPriceInt, err := cmd.Flags().GetUint64(gasPriceFlag)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("gas price error: %v", err))
-		return "", DefaultGasLimit, nil, nil, false, err
+		log.Error().Err(formatFlagError(gasPriceFlag, err))
+		return "", DefaultGasLimit, nil, nil, nil, false, err
 	}
 	var gasPrice *big.Int = nil
 	if gasPriceInt != 0 {
 		gasPrice = big.NewInt(0).SetUint64(gasPriceInt)
 	}
 
-	senderKeyPair, err := defineSender(cmd)
+	prepare, err := cmd.Flags().GetBool(prepareFlag)
 	if err != nil {
-		log.Error().Err(fmt.Errorf("define sender error: %v", err))
-		return "", DefaultGasLimit, nil, nil, false, err
+		log.Error().Err(formatFlagError(prepareFlag, err))
+		return "", DefaultGasLimit, nil, nil, nil, false, err
 	}
 
-	prepare, err := cmd.Flags().GetBool("prepare")
-	if err != nil {
-		log.Error().Err(fmt.Errorf("generate calldata error: %v", err))
-		return "", DefaultGasLimit, nil, nil, false, err
+	kmsConfigFile, _ := cmd.Flags().GetString(kmsConfigFileFlag)
+	if kmsConfigFile == "" {
+		senderKeyPair, err := defineSender(cmd)
+		if err != nil {
+			log.Error().Err(formatFlagError(privateKeyFlag, err))
+			return "", DefaultGasLimit, nil, nil, nil, false, err
+		}
+		return url, gasLimitInt, gasPrice, senderKeyPair, nil, prepare, nil
+	} else {
+		kmsConfig, err := kms.LoadConfigFromJSONFile(kmsConfigFile)
+		if err != nil {
+			log.Error().Err(formatFlagError(kmsConfigFileFlag, err))
+			return "", DefaultGasLimit, nil, nil, nil, false, err
+		}
+		kmsSigner, err := getKMSSignerFromConfig(kmsConfig)
+		if err != nil {
+			log.Error().Err(formatFlagError(kmsConfigFileFlag, err))
+			return "", DefaultGasLimit, nil, nil, nil, false, err
+		}
+		chainID, err := ethClient.ChainID(context.Background())
+		if err != nil {
+			log.Error().Err(fmt.Errorf("fail to retrieve chainID"))
+			return "", DefaultGasLimit, nil, nil, nil, false, err
+		}
+
+		kmsSigner.WithSigner(types2.NewLondonSigner(chainID))
+
+		return url, gasLimitInt, gasPrice, nil, kmsSigner, prepare, nil
 	}
-	return url, gasLimitInt, gasPrice, senderKeyPair, prepare, nil
 }
 
 func defineSender(cmd *cobra.Command) (*secp256k1.Keypair, error) {
@@ -88,4 +151,17 @@ func MarkFlagsAsRequired(cmd *cobra.Command, flags ...string) {
 			panic(err)
 		}
 	}
+}
+
+func getKMSSignerFromConfig(cfg *kms.Config) (kms.KMSSigner, error) {
+	switch strings.ToLower(cfg.Type) {
+	case "gcp":
+		return gcpkms.NewGoogleKMSClient(context.Background(), cfg.GcpConfig)
+	default:
+		return nil, fmt.Errorf("KMS `%v` not yet supported", cfg.Type)
+	}
+}
+
+func formatFlagError(flagName string, err error) error {
+	return fmt.Errorf("`%v` error: %v", flagName, err)
 }

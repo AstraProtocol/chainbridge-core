@@ -14,7 +14,7 @@ var CentrifugeCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		// fetch global flag values
-		url, _, gasPrice, senderKeyPair, prepare, err = flags.GlobalFlagValues(cmd)
+		url, _, gasPrice, senderKeyPair, kmsSigner, prepare, err = flags.GlobalFlagValues(cmd)
 		if err != nil {
 			return fmt.Errorf("could not get global flags: %v", err)
 		}

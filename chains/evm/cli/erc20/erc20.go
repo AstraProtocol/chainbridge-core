@@ -14,7 +14,7 @@ var ERC20Cmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		var err error
 		// fetch global flag values
-		url, gasLimit, gasPrice, senderKeyPair, prepare, err = flags.GlobalFlagValues(cmd)
+		url, gasLimit, gasPrice, senderKeyPair, kmsSigner, prepare, err = flags.GlobalFlagValues(cmd)
 		if err != nil {
 			return fmt.Errorf("could not get global flags: %v", err)
 		}
