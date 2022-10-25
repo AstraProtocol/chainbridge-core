@@ -15,6 +15,7 @@ var generateKeyPairCmd = &cobra.Command{
 	PreRun: func(cmd *cobra.Command, args []string) {
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
+	PersistentPreRunE: nil,
 }
 
 func generateKeyPair(cmd *cobra.Command, args []string) error {
