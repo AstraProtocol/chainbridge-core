@@ -2,6 +2,7 @@ package chain
 
 import (
 	"fmt"
+	kms "github.com/LampardNguyen234/evm-kms"
 	"math/big"
 	"time"
 
@@ -60,6 +61,13 @@ func NewEVMConfig(chainConfig map[string]interface{}) (*EVMConfig, error) {
 	err := mapstructure.Decode(chainConfig, &c)
 	if err != nil {
 		return nil, err
+	}
+	if _, ok := chainConfig["KmsConfig"]; ok {
+		kmsConfig, err := kms.LoadConfig(chainConfig["KmsConfig"].(map[string]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		c.KmsConfig = *kmsConfig
 	}
 
 	err = defaults.Set(&c)

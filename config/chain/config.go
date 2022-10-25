@@ -2,6 +2,7 @@ package chain
 
 import (
 	"fmt"
+	kms "github.com/LampardNguyen234/evm-kms"
 
 	"github.com/ChainSafe/chainbridge-core/flags"
 	"github.com/spf13/viper"
@@ -17,6 +18,7 @@ type GeneralChainConfig struct {
 	BlockstorePath string
 	FreshStart     bool
 	LatestBlock    bool
+	KmsConfig      kms.Config
 }
 
 func (c *GeneralChainConfig) Validate() error {
@@ -30,7 +32,18 @@ func (c *GeneralChainConfig) Validate() error {
 	if c.Name == "" {
 		return fmt.Errorf("required field chain.Name empty for chain %v", *c.Id)
 	}
+	if c.Key == "" {
+		if _, err := c.KmsConfig.IsValid(); err != nil {
+			fmt.Println(c.KmsConfig)
+			return fmt.Errorf("required either chain.Key non-empty or valid chain.KmsConfig")
+		}
+	}
 	return nil
+}
+
+// UseKms indicates whether we should use a KMSSigner instead of private key.
+func (c *GeneralChainConfig) UseKms() bool {
+	return c.Key == ""
 }
 
 func (c *GeneralChainConfig) ParseFlags() {
