@@ -24,6 +24,7 @@ var EvmRootCLI = &cobra.Command{
 	Short: "EVM CLI",
 	Long:  "Root command for starting EVM CLI",
 	PreRun: func(cmd *cobra.Command, args []string) {
+		utils.PrintSubCommandHelp(cmd, args)
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
 	// empty Run function to enable cobra PreRun - without this PreRun is never executed

@@ -16,6 +16,7 @@ var AccountRootCMD = &cobra.Command{
 func init() {
 	AccountRootCMD.AddCommand(generateKeyPairCmd)
 	AccountRootCMD.AddCommand(transferBaseCurrencyCmd)
+	AccountRootCMD.AddCommand(getKMSSignerAddressCmd)
 }
 
 func initGlobalFlags(cmd *cobra.Command, _ []string) error {

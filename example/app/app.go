@@ -6,11 +6,10 @@ package app
 import (
 	"context"
 	"fmt"
-	"github.com/LampardNguyen234/evm-kms/gcpkms"
+	kms "github.com/LampardNguyen234/evm-kms"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	secp256k1 "github.com/ethereum/go-ethereum/crypto"
@@ -72,22 +71,15 @@ func Run() error {
 						panic(err)
 					}
 
-					switch strings.ToLower(config.GeneralChainConfig.KmsConfig.Type) {
-					case "gcp":
-						gcpConfig := config.GeneralChainConfig.KmsConfig.GcpConfig
-						gcpConfig.ChainID = chainID.Uint64()
-						kmsSigner, err := gcpkms.NewGoogleKMSClient(ctx, gcpConfig)
-						if err != nil {
-							panic(err)
-						}
+					kmsSigner, err := kms.NewKMSSignerFromConfig(config.GeneralChainConfig.KmsConfig)
+					if err != nil {
+						panic(err)
+					}
+					kmsSigner.WithChainID(chainID)
 
-						client, err = evmclient.NewEVMClientWithKMSSigner(config.GeneralChainConfig.Endpoint,
-							kmsSigner)
-						if err != nil {
-							panic(err)
-						}
-					case "aws":
-						panic("not yet supported")
+					client, err = evmclient.NewEVMClientWithKMSSigner(config.GeneralChainConfig.Endpoint, kmsSigner)
+					if err != nil {
+						panic(err)
 					}
 				} else {
 					privateKey, err := secp256k1.HexToECDSA(config.GeneralChainConfig.Key)

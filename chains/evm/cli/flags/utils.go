@@ -105,13 +105,15 @@ func GlobalFlagValues(cmd *cobra.Command) (string, uint64, *big.Int, *secp256k1.
 			log.Error().Err(formatFlagError(kmsConfigFileFlag, err))
 			return "", DefaultGasLimit, nil, nil, nil, false, err
 		}
-		chainID, err := ethClient.ChainID(context.Background())
-		if err != nil {
-			log.Error().Err(fmt.Errorf("fail to retrieve chainID"))
-			return "", DefaultGasLimit, nil, nil, nil, false, err
-		}
+		if ethClient != nil {
+			chainID, err := ethClient.ChainID(context.Background())
+			if err != nil {
+				log.Error().Err(fmt.Errorf("fail to retrieve chainID"))
+				return "", DefaultGasLimit, nil, nil, nil, false, err
+			}
 
-		kmsSigner.WithSigner(types2.NewLondonSigner(chainID))
+			kmsSigner.WithSigner(types2.NewLondonSigner(chainID))
+		}
 
 		return url, gasLimitInt, gasPrice, nil, kmsSigner, prepare, nil
 	}
