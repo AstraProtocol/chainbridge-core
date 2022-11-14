@@ -1,6 +1,7 @@
 package account
 
 import (
+	kms "github.com/LampardNguyen234/evm-kms"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
@@ -30,4 +31,5 @@ var (
 	gasPrice      *big.Int
 	senderKeyPair *secp256k1.Keypair
 	prepare       bool
+	kmsSigner     kms.KMSSigner
 )

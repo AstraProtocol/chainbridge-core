@@ -26,7 +26,7 @@ var setDepositNonceCmd = &cobra.Command{
 		return util.CallPersistentPreRun(cmd, args)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := initialize.InitializeClient(url, senderKeyPair)
+		c, err := initialize.InitializeClient(url, senderKeyPair, kmsSigner)
 		if err != nil {
 			return err
 		}

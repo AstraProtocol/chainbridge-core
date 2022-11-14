@@ -6,6 +6,8 @@ package app
 import (
 	"context"
 	"fmt"
+	kms "github.com/LampardNguyen234/evm-kms"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,6 +40,8 @@ func Run() error {
 	if err != nil {
 		panic(err)
 	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	db, err := lvldb.NewLvlDB(viper.GetString(flags.BlockstoreFlagName))
 	if err != nil {
@@ -55,14 +59,38 @@ func Run() error {
 					panic(err)
 				}
 
-				privateKey, err := secp256k1.HexToECDSA(config.GeneralChainConfig.Key)
-				if err != nil {
-					panic(err)
-				}
+				var client *evmclient.EVMClient
+				if config.GeneralChainConfig.UseKms() {
+					// The chainID is required to create a valid KMSSigner.
+					tmpEvmClient, err := ethclient.Dial(config.GeneralChainConfig.Endpoint)
+					if err != nil {
+						panic(err)
+					}
+					chainID, err := tmpEvmClient.ChainID(ctx)
+					if err != nil {
+						panic(err)
+					}
 
-				client, err := evmclient.NewEVMClient(config.GeneralChainConfig.Endpoint, privateKey)
-				if err != nil {
-					panic(err)
+					kmsSigner, err := kms.NewKMSSignerFromConfig(config.GeneralChainConfig.KmsConfig)
+					if err != nil {
+						panic(err)
+					}
+					kmsSigner.WithChainID(chainID)
+
+					client, err = evmclient.NewEVMClientWithKMSSigner(config.GeneralChainConfig.Endpoint, kmsSigner)
+					if err != nil {
+						panic(err)
+					}
+				} else {
+					privateKey, err := secp256k1.HexToECDSA(config.GeneralChainConfig.Key)
+					if err != nil {
+						panic(err)
+					}
+
+					client, err = evmclient.NewEVMClient(config.GeneralChainConfig.Endpoint, privateKey)
+					if err != nil {
+						panic(err)
+					}
 				}
 
 				dummyGasPricer := dummy.NewStaticGasPriceDeterminant(client, nil)
@@ -105,8 +133,6 @@ func Run() error {
 	)
 
 	errChn := make(chan error)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	go r.Start(ctx, errChn)
 
 	sysErr := make(chan os.Signal, 1)

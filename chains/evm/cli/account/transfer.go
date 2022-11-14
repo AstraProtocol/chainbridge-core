@@ -13,7 +13,6 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
-	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -28,7 +27,7 @@ var transferBaseCurrencyCmd = &cobra.Command{
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		c, err := initialize.InitializeClient(url, senderKeyPair)
+		c, err := initialize.InitializeClient(url, senderKeyPair, kmsSigner)
 		if err != nil {
 			return err
 		}
@@ -38,9 +37,7 @@ var transferBaseCurrencyCmd = &cobra.Command{
 		}
 		return TransferBaseCurrency(cmd, args, t)
 	},
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		return util.CallPersistentPreRun(cmd, args)
-	},
+	PersistentPreRunE: initGlobalFlags,
 	Args: func(cmd *cobra.Command, args []string) error {
 		err := ValidateTransferBaseCurrencyFlags(cmd, args)
 		if err != nil {
@@ -76,7 +73,14 @@ func ProcessTransferBaseCurrencyFlags(cmd *cobra.Command, args []string) error {
 	WeiAmount, err = callsUtil.UserAmountToWei(Amount, decimals)
 	return err
 }
-func TransferBaseCurrency(cmd *cobra.Command, args []string, t transactor.Transactor) error {
+
+func TransferBaseCurrency(_ *cobra.Command, _ []string, t transactor.Transactor) error {
+	var senderAddress common.Address
+	if senderKeyPair != nil {
+		senderAddress = senderKeyPair.CommonAddress()
+	} else {
+		senderAddress = kmsSigner.GetAddress()
+	}
 	hash, err := t.Transact(
 		&RecipientAddress, nil, transactor.TransactOptions{Value: WeiAmount, GasLimit: gasLimit},
 	)
@@ -86,7 +90,7 @@ func TransferBaseCurrency(cmd *cobra.Command, args []string, t transactor.Transa
 	}
 	log.Debug().Msgf("base currency transaction hash: %s", hash.Hex())
 
-	log.Info().Msgf("%s tokens were transferred to %s from %s", Amount, RecipientAddress.Hex(), senderKeyPair.CommonAddress().String())
+	log.Info().Msgf("%s tokens were transferred to %s from %s", Amount, RecipientAddress.Hex(), senderAddress.String())
 	return nil
 }
 

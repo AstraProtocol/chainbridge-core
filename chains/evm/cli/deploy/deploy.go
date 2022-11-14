@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"math/big"
 
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls"
@@ -11,7 +12,6 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc20"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/erc721"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/generic"
-	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	evmgaspricer "github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmgaspricer"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/signAndSend"
@@ -164,19 +164,24 @@ func CallDeployCLI(cmd *cobra.Command, args []string) error {
 
 func DeployCLI(cmd *cobra.Command, args []string, txFabric calls.TxFabric, gasPricer utils.GasPricerWithPostConfig) error {
 	// fetch global flag values
-	url, gasLimit, gasPrice, senderKeyPair, _, err := flags.GlobalFlagValues(cmd)
+	url, gasLimit, gasPrice, senderKeyPair, kmsSigner, _, err := flags.GlobalFlagValues(cmd)
 	if err != nil {
 		return err
 	}
 
 	log.Debug().Msgf("url: %s gas limit: %v gas price: %v", url, gasLimit, gasPrice)
-	log.Debug().Msgf("SENDER Private key 0x%s", hex.EncodeToString(crypto.FromECDSA(senderKeyPair.PrivateKey())))
+	if senderKeyPair != nil {
+		log.Debug().Msgf("SENDER Private key 0x%s", hex.EncodeToString(crypto.FromECDSA(senderKeyPair.PrivateKey())))
+	} else if kmsSigner != nil {
+		log.Debug().Msgf("Run with KMSSigner: %v", kmsSigner.GetAddress().String())
+	}
 
-	ethClient, err := evmclient.NewEVMClient(url, senderKeyPair.PrivateKey())
+	ethClient, err := initialize.InitializeClient(url, senderKeyPair, kmsSigner)
 	if err != nil {
 		log.Error().Err(fmt.Errorf("ethereum client error: %v", err)).Msg("error initializing new EVM client")
 		return err
 	}
+
 	gasPricer.SetClient(ethClient)
 	gasPricer.SetOpts(&evmgaspricer.GasPricerOpts{UpperLimitFeePerGas: gasPrice})
 	log.Debug().Msgf("Relayers for deploy %+v", Relayers)

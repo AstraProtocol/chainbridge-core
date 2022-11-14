@@ -24,6 +24,7 @@ var EvmRootCLI = &cobra.Command{
 	Short: "EVM CLI",
 	Long:  "Root command for starting EVM CLI",
 	PreRun: func(cmd *cobra.Command, args []string) {
+		utils.PrintSubCommandHelp(cmd, args)
 		logger.LoggerMetadata(cmd.Name(), cmd.Flags())
 	},
 	// empty Run function to enable cobra PreRun - without this PreRun is never executed
@@ -37,6 +38,7 @@ var (
 	GasPriceFlagName           = "gas-price"
 	NetworkIdFlagName          = "network"
 	PrivateKeyFlagName         = "private-key"
+	KmsConfigFlagName          = "kms-config-file"
 	JsonWalletFlagName         = "json-wallet"
 	JsonWalletPasswordFlagName = "json-wallet-password"
 	Prepare                    = "prepare"
@@ -48,6 +50,7 @@ func BindEVMCLIFlags(evmRootCLI *cobra.Command) {
 	evmRootCLI.PersistentFlags().Uint64(GasPriceFlagName, 0, "Used as upperLimitGasPrice for transactions if not 0. Transactions gasPrice is defined by estimating it on network for pre London fork networks and by estimating BaseFee and MaxTipFeePerGas in post London networks")
 	evmRootCLI.PersistentFlags().Uint64(NetworkIdFlagName, 0, "ID of the Network")
 	evmRootCLI.PersistentFlags().String(PrivateKeyFlagName, "", "Private key to use")
+	evmRootCLI.PersistentFlags().String(KmsConfigFlagName, "", "Path to the KMS config file")
 	evmRootCLI.PersistentFlags().String(JsonWalletFlagName, "", "Encrypted JSON wallet")
 	evmRootCLI.PersistentFlags().String(JsonWalletPasswordFlagName, "", "Password for encrypted JSON wallet")
 	evmRootCLI.PersistentFlags().Bool(Prepare, false, "Generate calldata for command")
@@ -57,6 +60,7 @@ func BindEVMCLIFlags(evmRootCLI *cobra.Command) {
 	_ = viper.BindPFlag(GasPriceFlagName, evmRootCLI.PersistentFlags().Lookup(GasPriceFlagName))
 	_ = viper.BindPFlag(NetworkIdFlagName, evmRootCLI.PersistentFlags().Lookup(NetworkIdFlagName))
 	_ = viper.BindPFlag(PrivateKeyFlagName, evmRootCLI.PersistentFlags().Lookup(PrivateKeyFlagName))
+	_ = viper.BindPFlag(KmsConfigFlagName, evmRootCLI.PersistentFlags().Lookup(KmsConfigFlagName))
 	_ = viper.BindPFlag(JsonWalletFlagName, evmRootCLI.PersistentFlags().Lookup(JsonWalletFlagName))
 	_ = viper.BindPFlag(JsonWalletPasswordFlagName, evmRootCLI.PersistentFlags().Lookup(JsonWalletPasswordFlagName))
 	_ = viper.BindPFlag(Prepare, evmRootCLI.PersistentFlags().Lookup(Prepare))
