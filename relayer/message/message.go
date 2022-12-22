@@ -23,7 +23,6 @@ const (
 
 type ProposalStatus struct {
 	Status        uint8
-	YesVotes      *big.Int
 	YesVotesTotal uint8
 	ProposedBlock *big.Int
 }
