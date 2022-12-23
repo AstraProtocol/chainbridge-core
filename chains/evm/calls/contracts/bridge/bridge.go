@@ -47,6 +47,18 @@ func (c *BridgeContract) AddRelayer(
 	)
 }
 
+func (c *BridgeContract) AddRetrier(
+	retrierAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Adding new relayer %s", retrierAddr.String())
+	return c.ExecuteTransaction(
+		"adminAddRetrier",
+		opts,
+		retrierAddr,
+	)
+}
+
 func (c *BridgeContract) AdminSetGenericResource(
 	handler common.Address,
 	rID types.ResourceID,
