@@ -167,6 +167,18 @@ func (c *BridgeContract) Erc20Deposit(
 	return txHash, err
 }
 
+func (c *BridgeContract) Retry(depositTxHash common.Hash, opts transactor.TransactOptions) (*common.Hash, error) {
+	log.Debug().
+		Str("txHash", depositTxHash.String()).
+		Msgf("ERC20 deposit retry")
+	txHash, err := c.ExecuteTransaction("retry", opts, depositTxHash.String())
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	return txHash, nil
+}
+
 func (c *BridgeContract) Erc721Deposit(
 	tokenId *big.Int,
 	metadata string,
