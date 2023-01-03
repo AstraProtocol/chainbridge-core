@@ -49,14 +49,14 @@ func localSetup(cmd *cobra.Command, args []string) error {
 
 	// chain 1
 	// domainsId: 0
-	config, err := SetupEVMBridge(ethClient, fabric1, 1, big.NewInt(1), EveKp.CommonAddress(), DefaultRelayerAddresses)
+	config, err := SetupEVMBridge(ethClient, fabric1, 1, big.NewInt(1), big.NewInt(1000), EveKp.CommonAddress(), DefaultRelayerAddresses)
 	if err != nil {
 		return err
 	}
 
 	// chain 2
 	// domainId: 1
-	config2, err := SetupEVMBridge(ethClient2, fabric2, 2, big.NewInt(1), EveKp.CommonAddress(), DefaultRelayerAddresses)
+	config2, err := SetupEVMBridge(ethClient2, fabric2, 2, big.NewInt(1), big.NewInt(1000), EveKp.CommonAddress(), DefaultRelayerAddresses)
 	if err != nil {
 		return err
 	}
