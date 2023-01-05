@@ -47,6 +47,18 @@ func (c *BridgeContract) AddRelayer(
 	)
 }
 
+func (c *BridgeContract) AddRetrier(
+	retrierAddr common.Address,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Adding new relayer %s", retrierAddr.String())
+	return c.ExecuteTransaction(
+		"adminAddRetrier",
+		opts,
+		retrierAddr,
+	)
+}
+
 func (c *BridgeContract) AdminSetGenericResource(
 	handler common.Address,
 	rID types.ResourceID,
@@ -153,6 +165,18 @@ func (c *BridgeContract) Erc20Deposit(
 		return nil, err
 	}
 	return txHash, err
+}
+
+func (c *BridgeContract) Retry(depositTxHash common.Hash, opts transactor.TransactOptions) (*common.Hash, error) {
+	log.Debug().
+		Str("txHash", depositTxHash.String()).
+		Msgf("ERC20 deposit retry")
+	txHash, err := c.ExecuteTransaction("retry", opts, depositTxHash.String())
+	if err != nil {
+		log.Error().Err(err)
+		return nil, err
+	}
+	return txHash, nil
 }
 
 func (c *BridgeContract) Erc721Deposit(

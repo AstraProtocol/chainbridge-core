@@ -379,7 +379,7 @@ func (s *ProposalStatusTestSuite) TestBridge_ProposalStatus_Success() {
 	).Return(proposalStatus, nil)
 	res, err := s.bridgeContract.ProposalStatus(&s.proposal)
 	s.Equal(
-		message.ProposalStatus(message.ProposalStatus{Status: 0x3, YesVotes: big.NewInt(28), YesVotesTotal: 0x3, ProposedBlock: big.NewInt(31)}),
+		message.ProposalStatus(message.ProposalStatus{Status: 0x3, YesVotesTotal: 0x3, ProposedBlock: big.NewInt(31)}),
 		res,
 	)
 	s.Nil(err)

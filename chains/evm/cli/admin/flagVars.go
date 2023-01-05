@@ -1,18 +1,20 @@
 package admin
 
 import (
-	kms "github.com/LampardNguyen234/evm-kms"
 	"math/big"
+
+	kms "github.com/LampardNguyen234/evm-kms"
 
 	"github.com/ChainSafe/chainbridge-core/crypto/secp256k1"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
-//flag vars
+// flag vars
 var (
 	Admin            string
 	Relayer          string
+	Retrier          string
 	DepositNonce     uint64
 	DomainID         uint8
 	Fee              string
@@ -26,11 +28,12 @@ var (
 	Bridge           string
 )
 
-//processed flag vars
+// processed flag vars
 var (
 	BridgeAddr    common.Address
 	HandlerAddr   common.Address
 	RelayerAddr   common.Address
+	RetrierAddr   common.Address
 	RecipientAddr common.Address
 	TokenAddr     common.Address
 	RealAmount    *big.Int

@@ -64,6 +64,7 @@ func SetupEVMBridge(
 	fabric calls.TxFabric,
 	domainID uint8,
 	threshold *big.Int,
+	expiry *big.Int,
 	mintTo common.Address,
 	relayerAddresses []common.Address,
 ) (BridgeConfig, error) {
@@ -72,7 +73,7 @@ func SetupEVMBridge(
 
 	bridgeContract := bridge.NewBridgeContract(ethClient, common.Address{}, t)
 	bridgeContractAddress, err := bridgeContract.DeployContract(
-		domainID, relayerAddresses, threshold, big.NewInt(0), big.NewInt(100),
+		domainID, relayerAddresses, threshold, big.NewInt(0), expiry,
 	)
 	if err != nil {
 		return BridgeConfig{}, err
