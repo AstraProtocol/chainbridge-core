@@ -5,12 +5,14 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	kms "github.com/LampardNguyen234/evm-kms"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"os"
 	"os/signal"
 	"syscall"
+
+	kms "github.com/LampardNguyen234/evm-kms"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	secp256k1 "github.com/ethereum/go-ethereum/crypto"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/events"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmclient"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor/signAndSend"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/executor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/listener"
@@ -111,11 +114,20 @@ func Run() error {
 				mh.RegisterMessageHandler(config.Erc721Handler, executor.ERC721MessageHandler)
 				mh.RegisterMessageHandler(config.GenericHandler, executor.GenericMessageHandler)
 
+				gasLimit, ok := chainConfig["gasLimit"].(uint64)
+				if !ok {
+					panic(errors.New("wrong gas limit"))
+				}
+
+				transactOptions := transactor.TransactOptions{
+					GasLimit: gasLimit,
+				}
+
 				var evmVoter *executor.EVMVoter
-				evmVoter, err = executor.NewVoterWithSubscription(mh, client, bridgeContract)
+				evmVoter, err = executor.NewVoterWithSubscription(mh, client, bridgeContract, transactOptions)
 				if err != nil {
 					log.Error().Msgf("failed creating voter with subscription: %s. Falling back to default voter.", err.Error())
-					evmVoter = executor.NewVoter(mh, client, bridgeContract)
+					evmVoter = executor.NewVoter(mh, client, bridgeContract, transactOptions)
 				}
 
 				chain := evm.NewEVMChain(evmListener, evmVoter, blockstore, config)

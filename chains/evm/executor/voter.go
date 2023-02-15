@@ -59,6 +59,7 @@ type EVMVoter struct {
 	client               ChainClient
 	bridgeContract       BridgeContract
 	pendingProposalVotes map[common.Hash]uint8
+	transactOptions      transactor.TransactOptions
 }
 
 // NewVoterWithSubscription creates an instance of EVMVoter that votes for
@@ -68,12 +69,13 @@ type EVMVoter struct {
 // pending voteProposal transactions and avoids wasting gas on sending votes
 // for transactions that will fail.
 // Currently, officially supported only by Geth nodes.
-func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract) (*EVMVoter, error) {
+func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, transactOptions transactor.TransactOptions) (*EVMVoter, error) {
 	voter := &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		transactOptions:      transactOptions,
 	}
 
 	ch := make(chan common.Hash)
@@ -91,12 +93,13 @@ func NewVoterWithSubscription(mh MessageHandler, client ChainClient, bridgeContr
 // It is created without pending proposal subscription and is a fallback
 // for nodes that don't support pending transaction subscription and will vote
 // on proposals that already satisfy threshold.
-func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract) *EVMVoter {
+func NewVoter(mh MessageHandler, client ChainClient, bridgeContract BridgeContract, transactOptions transactor.TransactOptions) *EVMVoter {
 	return &EVMVoter{
 		mh:                   mh,
 		client:               client,
 		bridgeContract:       bridgeContract,
 		pendingProposalVotes: make(map[common.Hash]uint8),
+		transactOptions:      transactOptions,
 	}
 }
 
@@ -133,7 +136,9 @@ func (v *EVMVoter) Execute(m *message.Message) error {
 		return err
 	}
 
-	hash, err := v.bridgeContract.VoteProposal(prop, transactor.TransactOptions{Priority: prop.Metadata.Priority})
+	txOptions := v.transactOptions
+	txOptions.Priority = prop.Metadata.Priority
+	hash, err := v.bridgeContract.VoteProposal(prop, v.transactOptions)
 	if err != nil {
 		log.Error().Err(err).Msgf("voting for proposal %+v failed", prop)
 		return fmt.Errorf("voting failed. Err: %w", err)
