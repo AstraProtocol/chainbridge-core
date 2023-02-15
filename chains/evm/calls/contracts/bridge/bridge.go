@@ -59,6 +59,18 @@ func (c *BridgeContract) AddRetrier(
 	)
 }
 
+func (c *BridgeContract) AdminChangeFee(
+	newFee *big.Int,
+	opts transactor.TransactOptions,
+) (*common.Hash, error) {
+	log.Debug().Msgf("Admin change fee %s", newFee.String())
+	return c.ExecuteTransaction(
+		"adminChangeFee",
+		opts,
+		newFee,
+	)
+}
+
 func (c *BridgeContract) AdminSetGenericResource(
 	handler common.Address,
 	rID types.ResourceID,

@@ -2,8 +2,14 @@ package admin
 
 import (
 	"fmt"
+	"math/big"
 
+	callUtils "github.com/ChainSafe/chainbridge-core/chains/evm/calls"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/contracts/bridge"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/evmtransaction"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/flags"
+	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/initialize"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/cli/logger"
 	"github.com/ChainSafe/chainbridge-core/util"
 	"github.com/ethereum/go-ethereum/common"
@@ -48,10 +54,33 @@ func ValidateSetFeeFlags(cmd *cobra.Command, args []string) error {
 }
 
 func setFee(cmd *cobra.Command, args []string) error {
+	c, err := initialize.InitializeClient(url, senderKeyPair, kmsSigner)
+	if err != nil {
+		return err
+	}
+	t, err := initialize.InitializeTransactor(gasPrice, evmtransaction.NewTransaction, c, prepare)
+	if err != nil {
+		return err
+	}
+
 	log.Debug().Msgf(`
 Setting new fee
 Fee amount: %s
 Bridge address: %s`, Fee, Bridge)
+
+	newFee, err := callUtils.UserAmountToWei(Fee, big.NewInt(18))
+	if err != nil {
+		return err
+	}
+
+	BridgeAddr = common.HexToAddress(Bridge)
+	contract := bridge.NewBridgeContract(c, BridgeAddr, t)
+	tx, err := contract.AdminChangeFee(newFee, transactor.TransactOptions{GasLimit: gasLimit})
+	if err != nil {
+		return err
+	}
+
+	log.Debug().Msgf("Tx hash: %s", tx.String())
 	return nil
 }
 

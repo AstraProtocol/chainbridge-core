@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ChainSafe/chainbridge-core/chains/evm/calls/transactor"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/executor"
 	mock_voter "github.com/ChainSafe/chainbridge-core/chains/evm/executor/mock"
 	"github.com/ChainSafe/chainbridge-core/chains/evm/executor/proposal"
@@ -37,6 +38,7 @@ func (s *VoterTestSuite) SetupTest() {
 		s.mockMessageHandler,
 		s.mockClient,
 		s.mockBridgeContract,
+		transactor.TransactOptions{},
 	)
 	executor.Sleep = func(d time.Duration) {}
 }
